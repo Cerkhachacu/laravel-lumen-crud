@@ -49,37 +49,37 @@ $router->group(['prefix' => 'admin'], function () use ($router) {
         $router->put('users/{id}', 'UserController@update');
         $router->delete('users/{id}', 'UserController@destroy');
 
-        $router->post('categories', 'CategoryController@store');
-        $router->put('categories/{id}', 'CategoryController@update');
-        $router->delete('categories/{id}', 'CategoryController@destroy');
+        $router->post('certifications', 'CertificationController@store');
+        $router->put('certifications/{id}', 'CertificationController@update');
+        $router->delete('certifications/{id}', 'CertificationController@destroy');
 
-        $router->post('contracts', 'ContractController@store');
-        $router->put('contracts/{id}', 'ContractController@update');
-        $router->delete('contracts/{id}', 'ContractController@destroy');
+        $router->post('driving-licenses', 'DrivingLicenseController@store');
+        $router->put('driving-licenses/{id}', 'DrivingLicenseController@update');
+        $router->delete('driving-licenses/{id}', 'DrivingLicenseController@destroy');
 
         $router->post('educations', 'EducationController@store');
         $router->put('educations/{id}', 'EducationController@update');
         $router->delete('educations/{id}', 'EducationController@destroy');
 
-        $router->post('languages', 'LanguageController@store');
-        $router->put('languages/{id}', 'LanguageController@update');
-        $router->delete('languages/{id}', 'LanguageController@destroy');
+        $router->post('experiences', 'ExperienceController@store');
+        $router->put('experiences/{id}', 'ExperienceController@update');
+        $router->delete('experiences/{id}', 'ExperienceController@destroy');
 
         $router->post('locations', 'LocationController@store');
         $router->put('locations/{id}', 'LocationController@update');
         $router->delete('locations/{id}', 'LocationController@destroy');
 
-        $router->post('majors', 'MajorController@store');
-        $router->put('majors/{id}', 'MajorController@update');
-        $router->delete('majors/{id}', 'MajorController@destroy');
+        $router->post('last-job-positions', 'LastJobPositionController@store');
+        $router->put('last-job-positions/{id}', 'LastJobPositionController@update');
+        $router->delete('last-job-positions/{id}', 'LastJobPositionController@destroy');
 
         $router->post('opportunities', 'OpportunityController@store');
         $router->put('opportunities/{id}', 'OpportunityController@update');
         $router->delete('opportunities/{id}', 'OpportunityController@destroy');
 
-        $router->post('remotes', 'RemoteController@store');
-        $router->put('remotes/{id}', 'RemoteController@update');
-        $router->delete('remotes/{id}', 'RemoteController@destroy');
+        $router->post('senioritys', 'SeniorityController@store');
+        $router->put('senioritys/{id}', 'SeniorityController@update');
+        $router->delete('senioritys/{id}', 'SeniorityController@destroy');
 
         $router->post('roles', 'RoleController@store');
         $router->put('roles/{id}', 'RoleController@update');
@@ -88,22 +88,22 @@ $router->group(['prefix' => 'admin'], function () use ($router) {
 
         $router->get('users', 'UserController@index');
         $router->get('users/{id}', 'UserController@show');
-        $router->get('categories', 'CategoryController@index');
-        $router->get('categories/{id}', 'CategoryController@show');
-        $router->get('contracts', 'ContractController@index');
-        $router->get('contracts/{id}', 'ContractController@show');
+        $router->get('certifications', 'CertificationController@index');
+        $router->get('certifications/{id}', 'CertificationController@show');
+        $router->get('driving-licenses', 'DrivingLicenseController@index');
+        $router->get('driving-licenses/{id}', 'DrivingLicenseController@show');
         $router->get('educations', 'EducationController@index');
         $router->get('educations/{id}', 'EducationController@show');
-        $router->get('languages', 'LanguageController@index');
-        $router->get('languages/{id}', 'LanguageController@show');
+        $router->get('experiences', 'ExperienceController@index');
+        $router->get('experiences/{id}', 'ExperienceController@show');
         $router->get('locations', 'LocationController@index');
         $router->get('locations/{id}', 'LocationController@show');
-        $router->get('majors', 'MajorController@index');
-        $router->get('majors/{id}', 'MajorController@show');
+        $router->get('last-job-positions', 'LastJobPositionController@index');
+        $router->get('last-job-positions/{id}', 'LastJobPositionController@show');
         $router->get('opportunities', 'OpportunityController@index');
         $router->get('opportunities/{id}', 'OpportunityController@show');
-        $router->get('remotes', 'RemoteController@index');
-        $router->get('remotes/{id}', 'RemoteController@show');
+        $router->get('seniorities', 'SeniorityController@index');
+        $router->get('seniorities/{id}', 'SeniorityController@show');
         $router->get('roles', 'RoleController@index');
         $router->get('roles/{id}', 'RoleController@show');
     });
