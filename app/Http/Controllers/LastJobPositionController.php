@@ -5,24 +5,24 @@ namespace App\Http\Controllers;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
-use App\Entities\Location;
-use App\Transformers\LocationTransformer;
+use App\Entities\LastJobPosition;
+use App\Transformers\LastJobPositionTransformer;
 
-class LocationController extends Controller
+class LastJobPositionController extends Controller
 {
     /**
-     * Show all location data.
+     * Show all lastjobposition data.
      *
-     * @return List of location data
+     * @return List of lastjobposition data
      */
     public function index(Request $req)
     {
         try {
             //code...
             $limit = empty($req->input('limit')) ? 5 : $req->input('limit');
-            $location = Location::orderBy('created_at', 'desc')->paginate($limit);
-            $location = $this->paginate($location, new LocationTransformer());
-            return $this->responseJSON('List of data found', $location);
+            $lastjobposition = LastJobPosition::orderBy('created_at', 'desc')->paginate($limit);
+            $response = $this->paginate($lastjobposition, new LastJobPositionTransformer());
+            return $this->responseJSON('List of data found', $response);
         } catch (\Exception $ex) {
             //throw $ex;
             return $this->otherError($ex->getMessage(), $ex->getCode());
@@ -30,17 +30,17 @@ class LocationController extends Controller
     }
 
     /**
-     * Show a single location data.
+     * Show a single lastjobposition data.
      *
-     * @return Single location data
+     * @return Single lastjobposition data
      */
     public function show($id)
     {
         try {
             //code...
-            if($location = Location::find($id)) return $this->notFound('Location', 404, $id);
-            $location = $this->item($location, new LocationTransformer());
-            return $this->responseJSON('Location with id = '. $id . ' foung', $location);
+            if(!$lastjobposition = LastJobPosition::find($id)) return $this->notFound('Last Job Position', 404, $id);
+            $response = $this->item($lastjobposition, new LastJobPositionTransformer());
+            return $this->responseJSON('Last job position with id = '. $id .' found', $response);
         } catch (\Exception $ex) {
             //throw $th;
             return $this->otherError($ex->getMessage(), $ex->getCode());
@@ -48,7 +48,7 @@ class LocationController extends Controller
     }
 
     /**
-     * Adding a new location
+     * Adding a new lastjobposition
      *
      * @request name, last_updated_by, email, password, role
      *
@@ -60,51 +60,47 @@ class LocationController extends Controller
         try {
             //code...
             $validator = Validator::make($request->all(), [
-                'name' => 'required|max:255|unique:locations',
+                'name' => 'required|max:255|unique:lastjobpositions',
                 'last_updated_by' => 'required|exists:users,id'
             ]);
             if ($validator->fails()) {
                 return $this->validationError($validator->errors());
             }
-            $new_location = Location::create([
+            $new_lastjobposition = LastJobPosition::create([
                 'name' => $request->input('name'),
                 'last_updated_by' => $request->input('last_updated_by')
             ]);
-            $new_location = $this->item($new_location, new LocationTransformer());
+            $new_lastjobposition = $this->item($new_lastjobposition, new LastJobPositionTransformer());
             DB::commit();
-            return $this->responseJSON('Data is stored successfully!', $new_location);
+            return $this->responseJSON('Data is stored successfully', $new_lastjobposition);
         } catch (\Exception $ex) {
             //throw $ex;
             DB::rollback();
             return $this->otherError($ex->getMessage(), $ex->getCode());
         }
     }
-
-    /**
-     * Update a single data
-     */
     public function update(Request $request, $id)
     {
         DB::beginTransaction();
         try {
             //code...
             $validator = Validator::make($request->all(), [
-                'name' => 'unique:locations|max:255',
+                'name' => 'unique:lastjobpositions|max:255',
                 'last_updated_by' => 'required|exists:users,id'
             ]);
             if ($validator->fails()) {
                 return $this->validationError($validator->errors());
             }
-            if($location = Location::find($id)) return $this->notFound('Location', 404, $id);
-            $location->update([
-                'name' => $request->input('name') ? $request->input('name'):$location->name,
-                'last_updated_by' => $request->input('last_updated_by') ? $request->input('last_updated_by'):$location->last_updated_by
+            if($lastjobposition = LastJobPosition::find($id)) return $this->notFound('Last Job Position', 404, $id);
+            $lastjobposition->update([
+                'name' => $request->input('name') ? $request->input('name'):$lastjobposition->name,
+                'last_updated_by' => $request->input('last_updated_by') ? $request->input('last_updated_by'):$lastjobposition->last_updated_by
             ]);
-            $location = $this->item($location, new LocationTransformer());
+            $response = $this->item($lastjobposition, new LastJobPositionTransformer());
             DB::commit();
-            return $this->responseJSON('Location with id = '. $id . 'is updated', $location);
+            return $this->responseJSON('Last job position with id = '. $id . ' is updated', $response);
         } catch (\Exception $ex) {
-            //throw $ex;
+            //throw $th;
             DB::rollback();
             return $this->otherError($ex->getMessage(), $ex->getCode());
         }
@@ -112,9 +108,9 @@ class LocationController extends Controller
 
     /**
      *
-     * Delete location by location id
+     * Delete lastjobposition by lastjobposition id
      *
-     * @require location id
+     * @require lastjobposition id
      *
      * @return message delete success
      */
@@ -124,10 +120,10 @@ class LocationController extends Controller
          DB::beginTransaction();
         try {
             //code...
-            if(!$location=Location::find($id)) return $this->notFound('Location', 404, $id);
-            $location->delete();
+            if(!$lastjob = LastJobPosition::find($id)) return $this->notFound('Last Job Position', 404, $id);
+            $lastjob->delete();
             DB::commit();
-            return $this->responseJSON('Delete success', ['id'=> $id]);
+            return $this->responseJSON('Delete success!', ['id'=>$id]);
         } catch (\Exception $ex) {
             //throw $ex;
             DB::rollback();

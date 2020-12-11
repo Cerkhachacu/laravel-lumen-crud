@@ -4,9 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\Validator;
 use App\Entities\Role;
+use App\Transformers\RoleTransformer;
 
 class RoleController extends Controller
 {
@@ -15,14 +15,17 @@ class RoleController extends Controller
      *
      * @return List of role data
      */
-    public function index()
+    public function index(Request $req)
     {
-        $role = Role::orderBy('created_at', 'desc')->paginate(5);
-        return response()->json([
-            'code' => 200,
-            'success' => true,
-            'data' => $role
-        ], 200);
+        try {
+            //code...
+            $limit = empty($req->input('limit')) ? 5 : $req->input('limit');
+            $response = $this->paginate(Role::paginate($limit), new RoleTransformer());
+            return $this->responseJSON('List of data found', $response);
+        } catch (\Exception $ex) {
+            //throw $ex;
+            return $this->otherError($ex->getMessage(), $ex->getCode());
+        }
     }
 
     /**
@@ -34,13 +37,12 @@ class RoleController extends Controller
     {
         try {
             //code...
-            } catch (ModelNotFoundException $ex) {
+            if(!$role = Role::find($id)) return $this->notFound('Role', 404, $id);
+            $role = $this->item($role, new RoleTransformer());
+            return $this->responseJSON('List of data found', $role);
+            } catch (\Exception $ex) {
             //throw $th;
-            return response()->json([
-                'code'=> 404,
-                'success'=> false,
-                'message'=> 'Role is not exist'
-            ]);
+            return $this->otherError($ex->getMessage(), $ex->getCode());
         }
     }
 
@@ -53,27 +55,28 @@ class RoleController extends Controller
      */
     public function store(Request $request)
     {
-        $validator = Validator::make($request->all(), [
-            'name' => 'required|unique:roles|max:255',
-            'last_updated_by' => 'required|exists:users,id',
-        ]);
-        if ($validator->fails()) {
-            return response()->json([
-                'success'=> false,
-                'code' => 422,
-                'message' => $validator->errors()
-            ], 422);
+        DB::beginTransaction();
+        try {
+            //code...
+            $validator = Validator::make($request->all(), [
+                'name' => 'required|unique:roles|max:255',
+                'last_updated_by' => 'required|exists:users,id',
+            ]);
+            if ($validator->fails()) {
+                return $this->validationError($validator->errors());
+            }
+            $new_role = Role::create([
+                'name' => $request->input('name'),
+                'last_updated_by' => $request->input('last_updated_by')
+            ]);
+            $new_role = $this->item($new_role, new RoleTransformer());
+            DB::commit();
+            return $this->responseJSON('Data is stored successfully!', $new_role, 201);
+        } catch (\Exception $ex) {
+            //throw $ex;
+            DB::rollback();
+            return $this->otherError($ex->getMessage(), $ex->getCode());
         }
-        if(!$new_role = Role::create([
-            'name' => $request->input('name'),
-            'last_updated_by' => $request->input('last_updated_by')
-        ])) return response()->json(['code'=>500, 'message'=>$new_role], 500);
-        return response()->json([
-            'code' => 201,
-            'success'=> true,
-            'message'=> 'A new role added successfully',
-            'data' => $new_role
-            ], 201);
     }
 
     /**
@@ -86,36 +89,28 @@ class RoleController extends Controller
      */
     public function update(Request $request, $id)
     {
-        $validator = Validator::make($request->all(), [
-            'name' => 'max:255',
-            'last_updated_by' => 'required'
-        ]);
-        if ($validator->fails()) {
-            return response()->json([
-                'code' => 422,
-                'success'=> false,
-                'message' => $validator->errors()
-            ]);
-        }
+        DB::beginTransaction();
         try {
             //code...
-            $role = Role::find($id);
+            $validator = Validator::make($request->all(), [
+                'name' => 'max:255',
+                'last_updated_by' => 'required'
+            ]);
+            if ($validator->fails()) {
+                return $this->validationError($validator->errors());
+            }
+            if($role = Role::find($id)) return $this->notFound('Role', 404, $id);
             $role->update([
                 'name' => $request->input('name') ? $request->input('name'):$role->name,
                 'last_updated_by' => $request->input('last_updated_by') ? $request->input('last_updated_by'):$role->last_updated_by
             ]);
-            return response()->json([
-                'success'=> true,
-                'message'=> 'update success',
-                'data' => $role
-            ], 201);
-        } catch (ModelNotFoundException $ex) {
-            //throw $th;
-            return response()->json([
-                'code'=> 404,
-                'success'=> false,
-                'message'=> 'Role is not exist'
-            ]);
+            $role = $this->item($role, new RoleTransformer());
+            DB::commit();
+            return $this->responseJSON('Role with id = ' . $id . ' is updated', $role);
+        } catch (\Exception $ex) {
+            //throw $ex;
+            DB::rollback();
+            return $this->otherError($ex->getMessage(), $ex->getCode());
         }
     }
 
@@ -130,11 +125,17 @@ class RoleController extends Controller
 
      public function destroy($id)
      {
-        if(!Role::destroy($id)) return response()->json(['success' => false, 'message' => 'role not found'], 404);
-        return response()->json([
-            'code' => 200,
-            'success'=> true,
-            'message'=> 'Delete Success'
-        ], 200);
+         DB::beginTransaction();
+        try {
+            //code...
+            if(!$role = Role::find($id)) return $this->notFound('Role', 404, $id);
+            $role->delete();
+            DB::commit();
+            return $this->responseJSON('Delete success', ['id'=> $id]);
+        } catch (\Exception $ex) {
+            //throw $ex;
+            DB::rollback();
+            return $this->otherError($ex->getMessage(), $ex->getCode());
+        }
      }
 }

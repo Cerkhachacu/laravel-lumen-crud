@@ -5,23 +5,24 @@ namespace App\Http\Controllers;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
-use App\Entities\Education;
-use App\Transformers\EducationTransformer;
+use App\Entities\Seniority;
+use App\Transformers\SeniorityTransformer;
 
-class EducationController extends Controller
+class SeniorityController extends Controller
 {
     /**
-     * Show all education data.
+     * Show all seniority data.
      *
-     * @return List of education data
+     * @return List of seniority data
      */
     public function index(Request $req)
     {
         try {
             //code...
             $limit = empty($req->input('limit')) ? 5 : $req->input('limit');
-            $response = $this->paginate(Education::orderBy('updated_at', 'desc')->paginate($limit), new EducationTransformer());
-            return $this->responseJSON('List of data found', $response);
+            $seniority = Seniority::orderBy('created_at', 'desc')->paginate($limit);
+            $seniority = $this->paginate($seniority, new SeniorityTransformer());
+            return $this->responseJSON('List of data found', $seniority);
         } catch (\Exception $ex) {
             //throw $th;
             return $this->otherError($ex->getMessage(), $ex->getCode());
@@ -29,27 +30,27 @@ class EducationController extends Controller
     }
 
     /**
-     * Show a single education data.
+     * Show a single seniority data.
      *
-     * @return Single education data
+     * @return Single seniority data
      */
     public function show($id)
     {
         try {
             //code...
-            if(!$education = Education::find($id)) return $this->notFound('Education', 404, $id);
-            $response=$this->item($education, new EducationTransformer());
-            return $this->responseJSON('Education with id = '. $id . ' found', $response);
+            if($seniority = Seniority::find($id)) return $this->notFound('Seniority', 404, $id);
+            $seniority = $this->item($seniority, new SeniorityTransformer());
+            return $this->responseJSON('Seniority with id = '. $id . ' found', $seniority);
         } catch (\Exception $ex) {
             //throw $th;
-            return $this->otherError($ex->getMessage(), $ex->getCode());
+            return $this($ex->getMessage(), $ex->getCode());
         }
     }
 
     /**
-     * Adding a new education
+     * Adding a new seniority
      *
-     * @request name, last_updated_by, email, password, role
+     * @request name, last_updated_by
      *
      * @return message success
      */
@@ -59,45 +60,19 @@ class EducationController extends Controller
         try {
             //code...
             $validator = Validator::make($request->all(), [
-                'name' => 'unique:educations|required|max:255',
-                'last_updated_by' => 'required|exists:users,id'
+                'name' => 'required|unique:senioritys|max:255',
+                'last_updated_by' => 'required',
             ]);
             if ($validator->fails()) {
                 return $this->validationError($validator->errors());
             }
-            $new_education = Education::create([
+            $new_seniority = Seniority::create([
                 'name' => $request->input('name'),
                 'last_updated_by' => $request->input('last_updated_by')
             ]);
-            $new_education= $this->item($new_education, new EducationTransformer());
+            $new_seniority = $this->item($new_seniority, new SeniorityTransformer());
             DB::commit();
-            return $this->responseJSON('Data is stored successfully !', $new_education, 201);
-        } catch (\Exception $ex) {
-            //throw $th;
-            DB::rollback();
-            return $this->otherError($ex->getMessage(), $ex->getCode());
-        }
-    }
-    public function update(Request $request, $id)
-    {
-        DB::beginTransaction();
-        try {
-            //code...
-            $validator = Validator::make($request->all(), [
-                'name' => 'unique:educations|max:255',
-                'last_updated_by' => 'required|exists:users,id'
-            ]);
-            if ($validator->fails()) {
-                return $this->validationError($validator->errors());
-            }
-            if($education = Education::find($id)) return $this->notFound('Education', 404, $id);
-            $education->update([
-                'name' => $request->input('name') ? $request->input('name'):$education->name,
-                'last_updated_by' => $request->input('last_updated_by') ? $request->input('last_updated_by'):$education->last_updated_by
-            ]);
-            $education = $this->item($education, new EducationTransformer());
-            DB::commit();
-            return $this->responseJSON('Education with id = '. $id .'updated successfully', $education);
+            return $this->responseJSON('Data is stored successfully!', $new_seniority, 201);
         } catch (\Exception $ex) {
             //throw $th;
             DB::rollback();
@@ -107,9 +82,44 @@ class EducationController extends Controller
 
     /**
      *
-     * Delete education by education id
+     * Update a single item
      *
-     * @require education id
+     * @require id
+     *
+     * @return message update success
+     */
+    public function update(Request $request, $id)
+    {
+        DB::beginTransaction();
+        try {
+            //code...
+            $validator = Validator::make($request->all(), [
+                'name' => 'unique:senioritys|max:255',
+                'last_updated_by' => 'required'
+            ]);
+            if ($validator->fails()) {
+                return $this->validationError($validator->errors);
+            }
+            if($seniority = Seniority::find($id)) return $this->notFound('Seniority', 404, $id);
+            $seniority->update([
+                'name' => $request->input('name') ? $request->input('name'):$seniority->name,
+                'last_updated_by' => $request->input('last_updated_by') ? $request->input('last_updated_by'):$seniority->last_updated_by
+            ]);
+            $seniority = $this->item($seniority, new SeniorityTransformer());
+            DB::commit();
+            return $this->responseJSON('Seniority with id = '. $id . ' is udpated', $seniority);
+        } catch (\Exception $ex) {
+            //throw $th;
+            DB::rollback();
+            return $this->otherError($ex->getMessage(), $ex->getCode());
+        }
+    }
+
+    /**
+     *
+     * Delete seniority by seniority id
+     *
+     * @require seniority id
      *
      * @return message delete success
      */
@@ -119,8 +129,8 @@ class EducationController extends Controller
          DB::beginTransaction();
         try {
             //code...
-            if(!$education=Education::find($id)) return $this->notFound('Education', 404, $id);
-            $education->delete();
+            if($seniority = Seniority::find($id)) return $this->notFound('Seniority', 404, $id);
+            $seniority->delete();
             DB::commit();
             return $this->responseJSON('Delete success', ['id'=> $id]);
         } catch (\Exception $ex) {
