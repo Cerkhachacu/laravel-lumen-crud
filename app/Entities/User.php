@@ -20,14 +20,13 @@ class User extends Model implements AuthenticatableContract, AuthorizableContrac
      * @var array
      */
     protected $fillable = [
-        'first_name', 'last_name', 'email', 'password', 'role'
+        'first_name', 'last_name', 'email', 'password', 'role_id'
     ];
 
-    protected $with = ['role:id,name'];
 
     public function role()
     {
-        return $this->belongsTo('App\Entities\Role', 'role');
+        return $this->belongsTo('App\Entities\Role', 'role_id');
     }
 
     /**

@@ -4,10 +4,10 @@ namespace App\Entities;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Category extends Model
+class DrivingLicense extends Model
 {
 
-  protected $table = 'categories';
+  protected $table = 'driving_licenses';
   protected $fillable = ['name', 'last_updated_by'];
   public function user()
   {
