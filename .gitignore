@@ -24,3 +24,7 @@ Homestead.json
 
 /.idea
 
+# we're not using it yet
+Traits/
+Serializers/
+Parser/
