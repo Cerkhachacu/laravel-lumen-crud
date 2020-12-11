@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Validation\ValidationException;
 use Laravel\Lumen\Exceptions\Handler as ExceptionHandler;
 use Symfony\Component\HttpKernel\Exception\HttpException;
+use Illuminate\Support\Facades\DB;
 
 class Handler extends ExceptionHandler
 {
@@ -47,9 +48,11 @@ class Handler extends ExceptionHandler
     {
         // return parent::render($request, $exception);
         $rendered = parent::render($request, $exception);
+        DB::rollBack();
         return response()->json([
             'error' => [
                 'code' => $rendered->getStatusCode(),
+                'success' => false,
                 'message' => $exception->getMessage()
             ]
         ], $rendered->getStatusCode());
