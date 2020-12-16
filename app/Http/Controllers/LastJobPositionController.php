@@ -4,12 +4,17 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
-use App\Entities\LastJobPosition;
-use App\Transformers\LastJobPositionTransformer;
+use Illuminate\Support\Facades\DB;
+use App\Repositories\LastJobPositionRepositoryInterface;
 
 class LastJobPositionController extends Controller
 {
+    private $lastJobPositionRepository;
+
+    public function __construct(LastJobPositionRepositoryInterface $lastJobPositionRepository)
+    {
+        $this->lastJobPositionRepository = $lastJobPositionRepository;
+    }
     /**
      * Show all lastjobposition data.
      *
@@ -20,9 +25,7 @@ class LastJobPositionController extends Controller
         try {
             //code...
             $limit = empty($req->input('limit')) ? 5 : $req->input('limit');
-            $lastjobposition = LastJobPosition::orderBy('created_at', 'desc')->paginate($limit);
-            $response = $this->paginate($lastjobposition, new LastJobPositionTransformer());
-            return $this->responseJSON('List of data found', $response);
+            return $this->lastJobPositionRepository->paginator($limit);
         } catch (\Exception $ex) {
             //throw $ex;
             return $this->otherError($ex->getMessage(), $ex->getCode());
@@ -38,9 +41,7 @@ class LastJobPositionController extends Controller
     {
         try {
             //code...
-            if(!$lastjobposition = LastJobPosition::find($id)) return $this->notFound('Last Job Position', 404, $id);
-            $response = $this->item($lastjobposition, new LastJobPositionTransformer());
-            return $this->responseJSON('Last job position with id = '. $id .' found', $response);
+            return $this->lastJobPositionRepository->show($id);
         } catch (\Exception $ex) {
             //throw $th;
             return $this->otherError($ex->getMessage(), $ex->getCode());
@@ -59,20 +60,9 @@ class LastJobPositionController extends Controller
         DB::beginTransaction();
         try {
             //code...
-            $validator = Validator::make($request->all(), [
-                'name' => 'required|max:255|unique:lastjobpositions',
-                'last_updated_by' => 'required|exists:users,id'
-            ]);
-            if ($validator->fails()) {
-                return $this->validationError($validator->errors());
-            }
-            $new_lastjobposition = LastJobPosition::create([
-                'name' => $request->input('name'),
-                'last_updated_by' => $request->input('last_updated_by')
-            ]);
-            $new_lastjobposition = $this->item($new_lastjobposition, new LastJobPositionTransformer());
+            $newLastJobPosition = $this->lastJobPositionRepository->store($request->all());
             DB::commit();
-            return $this->responseJSON('Data is stored successfully', $new_lastjobposition);
+            return $newLastJobPosition;
         } catch (\Exception $ex) {
             //throw $ex;
             DB::rollback();
@@ -84,21 +74,9 @@ class LastJobPositionController extends Controller
         DB::beginTransaction();
         try {
             //code...
-            $validator = Validator::make($request->all(), [
-                'name' => 'unique:lastjobpositions|max:255',
-                'last_updated_by' => 'required|exists:users,id'
-            ]);
-            if ($validator->fails()) {
-                return $this->validationError($validator->errors());
-            }
-            if($lastjobposition = LastJobPosition::find($id)) return $this->notFound('Last Job Position', 404, $id);
-            $lastjobposition->update([
-                'name' => $request->input('name') ? $request->input('name'):$lastjobposition->name,
-                'last_updated_by' => $request->input('last_updated_by') ? $request->input('last_updated_by'):$lastjobposition->last_updated_by
-            ]);
-            $response = $this->item($lastjobposition, new LastJobPositionTransformer());
+            $lastJobPosition = $this->lastJobPositionRepository->update($request->all(), $id);
             DB::commit();
-            return $this->responseJSON('Last job position with id = '. $id . ' is updated', $response);
+            return $lastJobPosition;
         } catch (\Exception $ex) {
             //throw $th;
             DB::rollback();
@@ -120,10 +98,9 @@ class LastJobPositionController extends Controller
          DB::beginTransaction();
         try {
             //code...
-            if(!$lastjob = LastJobPosition::find($id)) return $this->notFound('Last Job Position', 404, $id);
-            $lastjob->delete();
+            $lastJobPosition = $this->lastJobPositionRepository->destroy($id);
             DB::commit();
-            return $this->responseJSON('Delete success!', ['id'=>$id]);
+            return $lastJobPosition;
         } catch (\Exception $ex) {
             //throw $ex;
             DB::rollback();

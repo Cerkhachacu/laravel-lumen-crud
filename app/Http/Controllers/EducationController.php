@@ -4,12 +4,17 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
-use App\Entities\Education;
-use App\Transformers\EducationTransformer;
+use App\Repositories\EducationRepositoryInterface;
+use Illuminate\Support\Facades\DB;
 
 class EducationController extends Controller
 {
+    private $educationRepository;
+
+    public function __construct(EducationRepositoryInterface $educationRepository)
+    {
+        $this->educationRepository = $educationRepository;
+    }
     /**
      * Show all education data.
      *
@@ -19,9 +24,8 @@ class EducationController extends Controller
     {
         try {
             //code...
-            $limit = empty($req->input('limit')) ? 5 : $req->input('limit');
-            $response = $this->paginate(Education::orderBy('updated_at', 'desc')->paginate($limit), new EducationTransformer());
-            return $this->responseJSON('List of data found', $response);
+            $paginate = !empty($req->input('limit')) ? $req->input('limit') : 5;
+            return $this->educationRepository->paginator($paginate);
         } catch (\Exception $ex) {
             //throw $th;
             return $this->otherError($ex->getMessage(), $ex->getCode());
@@ -37,9 +41,7 @@ class EducationController extends Controller
     {
         try {
             //code...
-            if(!$education = Education::find($id)) return $this->notFound('Education', 404, $id);
-            $response=$this->item($education, new EducationTransformer());
-            return $this->responseJSON('Education with id = '. $id . ' found', $response);
+            return $this->educationRepository->show($id);
         } catch (\Exception $ex) {
             //throw $th;
             return $this->otherError($ex->getMessage(), $ex->getCode());
@@ -57,47 +59,28 @@ class EducationController extends Controller
     {
         DB::beginTransaction();
         try {
-            //code...
-            $validator = Validator::make($request->all(), [
-                'name' => 'unique:educations|required|max:255',
-                'last_updated_by' => 'required|exists:users,id'
-            ]);
-            if ($validator->fails()) {
-                return $this->validationError($validator->errors());
-            }
-            $new_education = Education::create([
-                'name' => $request->input('name'),
-                'last_updated_by' => $request->input('last_updated_by')
-            ]);
-            $new_education= $this->item($new_education, new EducationTransformer());
+            $new_education = $this->educationRepository->store($request->all());
             DB::commit();
-            return $this->responseJSON('Data is stored successfully !', $new_education, 201);
+            return $new_education;
         } catch (\Exception $ex) {
             //throw $th;
             DB::rollback();
             return $this->otherError($ex->getMessage(), $ex->getCode());
         }
     }
+
+    /**
+     * Update a single data
+     * @require $id
+     */
     public function update(Request $request, $id)
     {
         DB::beginTransaction();
         try {
             //code...
-            $validator = Validator::make($request->all(), [
-                'name' => 'unique:educations|max:255',
-                'last_updated_by' => 'required|exists:users,id'
-            ]);
-            if ($validator->fails()) {
-                return $this->validationError($validator->errors());
-            }
-            if($education = Education::find($id)) return $this->notFound('Education', 404, $id);
-            $education->update([
-                'name' => $request->input('name') ? $request->input('name'):$education->name,
-                'last_updated_by' => $request->input('last_updated_by') ? $request->input('last_updated_by'):$education->last_updated_by
-            ]);
-            $education = $this->item($education, new EducationTransformer());
+            $education = $this->educationRepository->update($request->all(), $id);
             DB::commit();
-            return $this->responseJSON('Education with id = '. $id .'updated successfully', $education);
+            return $education;
         } catch (\Exception $ex) {
             //throw $th;
             DB::rollback();
@@ -119,10 +102,9 @@ class EducationController extends Controller
          DB::beginTransaction();
         try {
             //code...
-            if(!$education=Education::find($id)) return $this->notFound('Education', 404, $id);
-            $education->delete();
+            $education = $this->educationRepository->destroy($id);
             DB::commit();
-            return $this->responseJSON('Delete success', ['id'=> $id]);
+            return $education;
         } catch (\Exception $ex) {
             //throw $th;
             DB::rollback();

@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Hash;
 use App\Entities\User;
 use App\Transformers\UserTransformer;
+use Illuminate\Support\Facades\DB;
 
 class UserController extends Controller
 {

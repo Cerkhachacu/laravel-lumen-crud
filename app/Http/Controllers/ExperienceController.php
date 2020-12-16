@@ -4,12 +4,17 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
-use App\Entities\Experience;
-use App\Transformers\ExperienceTransformer;
+use Illuminate\Support\Facades\DB;
+use App\Repositories\ExperienceRepositoryInterface;
 
 class ExperienceController extends Controller
 {
+    private $experienceRepository;
+
+    public function __construct(ExperienceRepositoryInterface $experienceRepository)
+    {
+        $this->experienceRepository = $experienceRepository;
+    }
     /**
      * Show all experience data.
      *
@@ -20,8 +25,7 @@ class ExperienceController extends Controller
         try {
             //code...
             $limit = empty($req->input('limit')) ? 5 : $req->input('limit');
-            $response = $this->paginate(Experience::orderBy('updated_at', 'desc')->paginate($limit), new ExperienceTransformer());
-            return $this->responseJSON('List of data found', $response);
+            return $this->experienceRepository->paginator($limit);
         } catch (\Exception $ex) {
             //throw $th;
             return $this->otherError($ex->getMessage(), $ex->getCode());
@@ -37,9 +41,7 @@ class ExperienceController extends Controller
     {
         try {
             //code...
-            if(!$experience = Experience::find($id)) return $this->notFound('Experience', 404, $id);
-            $response=$this->item($experience, new ExperienceTransformer());
-            return $this->responseJSON('Experience with id = '. $id .' found', $response);
+            return $this->experienceRepository->show($id);
         } catch (\Exception $ex) {
             //throw $th;
             return $this->otherError($ex->getMessage(), $ex->getCode());
@@ -58,20 +60,9 @@ class ExperienceController extends Controller
         DB::beginTransaction();
         try {
             //code...
-            $validator = Validator::make($request->all(), [
-                'name' => 'required|max:255|unique:experiences',
-                'last_updated_by' => 'required|exists:users,id'
-            ]);
-            if ($validator->fails()) {
-                return $this->validationError($validator->errors());
-            }
-            $new_experience = Experience::create([
-                'name' => $request->input('name'),
-                'last_updated_by' => $request->input('last_updated_by')
-            ]);
-            $new_experience = $this->item($new_experience, new ExperienceTransformer());
+            $new_experience = $this->experienceRepository->store($request->all());
             DB::commit();
-            return $this->responseJSON('Data is stored successfully!', $new_experience, 201);
+            return $new_experience;
         } catch (\Exception $ex) {
             //throw $th;
             DB::rollback();
@@ -87,21 +78,9 @@ class ExperienceController extends Controller
         DB::beginTransaction();
         try {
             //code...
-            $validator = Validator::make($request->all(), [
-                'name' => 'unique:experiences|max:255',
-                'last_updated_by' => 'exists:users,id|required'
-            ]);
-            if ($validator->fails()) {
-                return $this->validationError($validator->errors());
-            }
-            if($experience = Experience::find($id)) return $this->notFound('Experience', 404, $id);
-            $experience->update([
-                'name' => $request->input('name') ? $request->input('name'):$experience->name,
-                'last_updated_by' => $request->input('last_updated_by') ? $request->input('last_updated_by'):$experience->last_updated_by
-            ]);
-            $response = $this->item($experience, new ExperienceTransformer());
+            $experience = $this->experienceRepository->update($request->all(), $id);
             DB::commit();
-            return $this->responseJSON('Education with id = '. $id . ' is updated successfully', $response);
+            return $experience;
         } catch (\Exception $ex) {
             //throw $th;
             DB::rollback();
@@ -123,10 +102,9 @@ class ExperienceController extends Controller
          DB::beginTransaction();
         try {
             //code...
-            if(!$experience = Experience::find($id)) return $this->notFound('Experience', 404, $id);
-            $experience->delete();
+            $experience= $this->experienceRepository->destroy($id);
             DB::commit();
-            return $this->responseJSON('Delete success!', ['id'=> $id]);
+            return $experience;
         } catch (\Exception $ex) {
             //throw $th;
             DB::rollback();

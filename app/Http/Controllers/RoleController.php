@@ -4,12 +4,16 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
-use App\Entities\Role;
-use App\Transformers\RoleTransformer;
-
+use Illuminate\Support\Facades\DB;
+use App\Repositories\RoleRepositoryInterface;
 class RoleController extends Controller
 {
+    private $roleRepository;
+
+    public function __construct(RoleRepositoryInterface $roleRepository)
+    {
+        $this->roleRepository = $roleRepository;
+    }
     /**
      * Show all role data.
      *
@@ -20,8 +24,7 @@ class RoleController extends Controller
         try {
             //code...
             $limit = empty($req->input('limit')) ? 5 : $req->input('limit');
-            $response = $this->paginate(Role::paginate($limit), new RoleTransformer());
-            return $this->responseJSON('List of data found', $response);
+            return $this->roleRepository->paginator($limit);
         } catch (\Exception $ex) {
             //throw $ex;
             return $this->otherError($ex->getMessage(), $ex->getCode());
@@ -37,9 +40,7 @@ class RoleController extends Controller
     {
         try {
             //code...
-            if(!$role = Role::find($id)) return $this->notFound('Role', 404, $id);
-            $role = $this->item($role, new RoleTransformer());
-            return $this->responseJSON('List of data found', $role);
+            return $this->roleRepository->show($id);
             } catch (\Exception $ex) {
             //throw $th;
             return $this->otherError($ex->getMessage(), $ex->getCode());
@@ -58,20 +59,9 @@ class RoleController extends Controller
         DB::beginTransaction();
         try {
             //code...
-            $validator = Validator::make($request->all(), [
-                'name' => 'required|unique:roles|max:255',
-                'last_updated_by' => 'required|exists:users,id',
-            ]);
-            if ($validator->fails()) {
-                return $this->validationError($validator->errors());
-            }
-            $new_role = Role::create([
-                'name' => $request->input('name'),
-                'last_updated_by' => $request->input('last_updated_by')
-            ]);
-            $new_role = $this->item($new_role, new RoleTransformer());
+            $newRole = $this->roleRepository->store($request->all());
             DB::commit();
-            return $this->responseJSON('Data is stored successfully!', $new_role, 201);
+            return $newRole;
         } catch (\Exception $ex) {
             //throw $ex;
             DB::rollback();
@@ -92,21 +82,9 @@ class RoleController extends Controller
         DB::beginTransaction();
         try {
             //code...
-            $validator = Validator::make($request->all(), [
-                'name' => 'max:255',
-                'last_updated_by' => 'required'
-            ]);
-            if ($validator->fails()) {
-                return $this->validationError($validator->errors());
-            }
-            if($role = Role::find($id)) return $this->notFound('Role', 404, $id);
-            $role->update([
-                'name' => $request->input('name') ? $request->input('name'):$role->name,
-                'last_updated_by' => $request->input('last_updated_by') ? $request->input('last_updated_by'):$role->last_updated_by
-            ]);
-            $role = $this->item($role, new RoleTransformer());
+            $role = $this->roleRepository->update($request->all(), $id);
             DB::commit();
-            return $this->responseJSON('Role with id = ' . $id . ' is updated', $role);
+            return $role;
         } catch (\Exception $ex) {
             //throw $ex;
             DB::rollback();
@@ -128,10 +106,9 @@ class RoleController extends Controller
          DB::beginTransaction();
         try {
             //code...
-            if(!$role = Role::find($id)) return $this->notFound('Role', 404, $id);
-            $role->delete();
+            $role = $this->roleRepository->destroy($id);
             DB::commit();
-            return $this->responseJSON('Delete success', ['id'=> $id]);
+            return $role;
         } catch (\Exception $ex) {
             //throw $ex;
             DB::rollback();

@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\Validator;
 use App\Entities\Opportunity;
+use Illuminate\Support\Facades\DB;
 
 class OpportunityController extends Controller
 {
@@ -59,27 +60,20 @@ class OpportunityController extends Controller
      */
     public function store(Request $request)
     {
+        DB::beginTransaction();
         $validator = Validator::make($request->all(), [
             'name' => 'required|unique:opportunities',
             'last_updated_by' => 'required|exists:users,id'
         ]);
         if ($validator->fails()) {
-            return response()->json([
-                'success'=> false,
-                'code' => 422,
-                'message' => $validator->errors()
-            ], 422);
+            return $this->validationError($validator->errors());
         }
-        if(!$new_opportunity = Opportunity::create([
+        $new_opportunity = Opportunity::create([
             'name' => $request->input('name'),
             'last_updated_by' => $request->input('last_updated_by')
-        ])) return response()->json(['code'=>500, 'message'=>$new_opportunity], 500);
-        return response()->json([
-            'code' => 201,
-            'success'=> true,
-            'message'=> 'A new opportunity added successfully',
-            'data' => $new_opportunity
-            ], 201);
+        ]);
+        // $new_opportunity = $this->item($new_opportunity, new)
+        return ;
     }
     public function update(Request $request, $id)
     {

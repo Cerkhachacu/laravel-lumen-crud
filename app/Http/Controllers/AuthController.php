@@ -51,7 +51,7 @@ class AuthController extends Controller
             if($validator->fails()) return $this->validationError($validator->errors());
             if(!$user=User::where('email', '=', $request->email)->firstOrFail()) return $this->notFound('User', 404, 1, 'Email is not registered');
             if(!Hash::check($request->password, $user['password'])) return $this->notFound('User', 401, 1, 'Password is incorrect!');
-            $user = ['email'=> $user->email, 'token'=> 'Bearer ' . $user->createToken('MyApp')->accessToken];
+            $user = ['id'=> $user->id, 'email'=> $user->email, 'token'=> 'Bearer ' . $user->createToken('MyApp')->accessToken];
             return $this->responseJSON('Login Success', $user);
 
         } catch (\Exception $ex) {

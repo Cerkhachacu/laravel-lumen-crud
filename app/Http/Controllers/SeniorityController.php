@@ -4,12 +4,16 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
-use App\Entities\Seniority;
-use App\Transformers\SeniorityTransformer;
-
+use Illuminate\Support\Facades\DB;
+use App\Repositories\SeniorityRepositoryInterface;
 class SeniorityController extends Controller
 {
+    private $seniorityRepository;
+
+    public function __construct(SeniorityRepositoryInterface $seniorityRepository)
+    {
+        $this->seniorityRepository = $seniorityRepository;
+    }
     /**
      * Show all seniority data.
      *
@@ -20,9 +24,7 @@ class SeniorityController extends Controller
         try {
             //code...
             $limit = empty($req->input('limit')) ? 5 : $req->input('limit');
-            $seniority = Seniority::orderBy('created_at', 'desc')->paginate($limit);
-            $seniority = $this->paginate($seniority, new SeniorityTransformer());
-            return $this->responseJSON('List of data found', $seniority);
+            return $this->seniorityRepository->paginator($limit);
         } catch (\Exception $ex) {
             //throw $th;
             return $this->otherError($ex->getMessage(), $ex->getCode());
@@ -38,9 +40,7 @@ class SeniorityController extends Controller
     {
         try {
             //code...
-            if($seniority = Seniority::find($id)) return $this->notFound('Seniority', 404, $id);
-            $seniority = $this->item($seniority, new SeniorityTransformer());
-            return $this->responseJSON('Seniority with id = '. $id . ' found', $seniority);
+            return $this->seniorityRepository->show($id);
         } catch (\Exception $ex) {
             //throw $th;
             return $this($ex->getMessage(), $ex->getCode());
@@ -59,20 +59,9 @@ class SeniorityController extends Controller
         DB::beginTransaction();
         try {
             //code...
-            $validator = Validator::make($request->all(), [
-                'name' => 'required|unique:senioritys|max:255',
-                'last_updated_by' => 'required',
-            ]);
-            if ($validator->fails()) {
-                return $this->validationError($validator->errors());
-            }
-            $new_seniority = Seniority::create([
-                'name' => $request->input('name'),
-                'last_updated_by' => $request->input('last_updated_by')
-            ]);
-            $new_seniority = $this->item($new_seniority, new SeniorityTransformer());
+            $newSeniority = $this->seniorityRepository->store($request->all());
             DB::commit();
-            return $this->responseJSON('Data is stored successfully!', $new_seniority, 201);
+            return $newSeniority;
         } catch (\Exception $ex) {
             //throw $th;
             DB::rollback();
@@ -93,21 +82,9 @@ class SeniorityController extends Controller
         DB::beginTransaction();
         try {
             //code...
-            $validator = Validator::make($request->all(), [
-                'name' => 'unique:senioritys|max:255',
-                'last_updated_by' => 'required'
-            ]);
-            if ($validator->fails()) {
-                return $this->validationError($validator->errors);
-            }
-            if($seniority = Seniority::find($id)) return $this->notFound('Seniority', 404, $id);
-            $seniority->update([
-                'name' => $request->input('name') ? $request->input('name'):$seniority->name,
-                'last_updated_by' => $request->input('last_updated_by') ? $request->input('last_updated_by'):$seniority->last_updated_by
-            ]);
-            $seniority = $this->item($seniority, new SeniorityTransformer());
+            $seniority = $this->seniorityRepository->update($request->all(), $id);
             DB::commit();
-            return $this->responseJSON('Seniority with id = '. $id . ' is udpated', $seniority);
+            return $seniority;
         } catch (\Exception $ex) {
             //throw $th;
             DB::rollback();
@@ -129,10 +106,9 @@ class SeniorityController extends Controller
          DB::beginTransaction();
         try {
             //code...
-            if($seniority = Seniority::find($id)) return $this->notFound('Seniority', 404, $id);
-            $seniority->delete();
+            $seniority = $this->seniorityRepository->destroy($id);
             DB::commit();
-            return $this->responseJSON('Delete success', ['id'=> $id]);
+            return $seniority;
         } catch (\Exception $ex) {
             //throw $th;
             DB::rollback();

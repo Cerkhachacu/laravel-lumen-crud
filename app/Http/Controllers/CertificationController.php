@@ -4,13 +4,16 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
-use App\Entities\Certification;
+use App\Repositories\CertificationRepositoryInterface;
 use Illuminate\Support\Facades\DB;
-use App\Transformers\CertificationTransformer;
-
 class CertificationController extends Controller
 {
+    private $certificationRepository;
+
+    public function __construct(CertificationRepositoryInterface $certificationRepository)
+    {
+        $this->certificationRepository = $certificationRepository;
+    }
     /**
      * Show all certification data.
      *
@@ -20,9 +23,8 @@ class CertificationController extends Controller
     {
         try {
             //code...
-            $limit = empty($req->input('limit')) ? 5 : $req->input('limit');
-            $response = $this->paginate(Certification::orderBy('updated_at', 'desc')->paginate($limit), new CertificationTransformer());
-            return $this->responseJSON('List of data found', $response);
+            $certification = !empty($req->input('limit')) ? $req->input('limit') : 5;
+            return $this->certificationRepository->paginator($certification);
         } catch (\Exception $ex) {
             //throw $th;
             return $this->otherError($ex->getMessage(), $ex->getCode());
@@ -38,9 +40,7 @@ class CertificationController extends Controller
     {
         try {
             //code...
-            if(!$certification = Certification::find($id)) return $this->notFound('certification', 404, $id);
-            $result=$this->item($certification, new CertificationTransformer());
-            return $this->responseJSON('Certification found', $result, 200);
+            return $this->certificationRepository->show($id);
         } catch (\Exception $ex) {
             //throw $th;
             return $this->otherError($ex->getMessage(), $ex->getCode());
@@ -59,20 +59,9 @@ class CertificationController extends Controller
         DB::beginTransaction();
         try {
             //code...
-            $validator = Validator::make($request->all(), [
-                'name' => 'required|max:255|unique:certifications',
-                'last_updated_by' => 'required|exists:users,id'
-            ]);
-            if ($validator->fails()) {
-                return $this->validationError($validator->errors());
-            }
-            $new_certification = Certification::create([
-                'name' => $request->input('name'),
-                'last_updated_by' => $request->input('last_updated_by')
-            ]);
-            $new_certification= $this->item($new_certification, new CertificationTransformer());
+            $newCertification = $this->certificationRepository->store($request->all());
             DB::commit();
-            return $this->responseJSON('Data is stored', $new_certification, 201);
+            return $newCertification;
         } catch (\Exception $ex) {
             //throw $th;
             DB::rollback();
@@ -85,21 +74,9 @@ class CertificationController extends Controller
         DB::beginTransaction();
         try {
             //code...
-            $validator = Validator::make($request->all(), [
-                'name' => 'max:255|unique:certifications',
-                'last_updated_by' => 'required|exists:users,id'
-            ]);
-            if ($validator->fails()) {
-                return $this->validationError($validator->errors());
-            }
-            if($certification = Certification::find($id)) return $this->notFound('Certification', 404, $id);
-            $certification->update([
-                'name' => $request->input('name') ? $request->input('name'):$certification->name,
-                'last_updated_by' => $request->input('last_updated_by') ? $request->input('last_updated_by'):$certification->last_updated_by
-            ]);
-            $updatedCertification = $this->item($certification, new CertificationTransformer());
+            $certification = $this->certificationRepository->update($request-> all(), $id);
             DB::commit();
-            return $this->responseJSON('Certification with id = ' . $id . ' is updated successfully', $updatedCertification);
+            return $certification;
         } catch (\Exception $ex) {
             //throw $th;
             DB::rollback();
@@ -118,12 +95,12 @@ class CertificationController extends Controller
 
      public function destroy($id)
      {
+        DB::beginTransaction();
         try {
             //code...
-            if(!$certification = Certification::find($id)) return $this->notFound('Certification', 404, $id);
-            $certification->delete();
+            $certification = $this->certificationRepository->destroy($id);
             DB::commit();
-            return $this->responseJSON('Delete success', []);
+            return $certification;
         } catch (\Exception $ex) {
             //throw $th;
             DB::rollback();

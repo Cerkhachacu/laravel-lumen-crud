@@ -4,13 +4,17 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
-use App\Entities\DrivingLicense;
 use Illuminate\Support\Facades\DB;
-use App\Transformers\DrivingLicenseTransformer;
+use App\Repositories\DrivingLicenseRepositoryInterface;
 
 class DrivingLicenseController extends Controller
 {
+    private $drivinglicenseRepository;
+
+    public function __construct(DrivingLicenseRepositoryInterface $drivinglicenseRepository)
+    {
+        $this->drivinglicenseRepository = $drivinglicenseRepository;
+    }
     /**
      * Show all drivinglicense data.
      *
@@ -21,9 +25,7 @@ class DrivingLicenseController extends Controller
         try {
             //code...
             $limit = empty($req->input('limit')) ? 5 : $req->input('limit');
-            $drivinglicense = DrivingLicense::orderBy('created_at', 'desc')->paginate($limit);
-            $data = $this->paginate($drivinglicense, new DrivingLicenseTransformer());
-            return $this->showResult('List of data found', $data);
+            return $this->drivinglicenseRepository->paginator($limit);
         } catch (\Exception $ex) {
             //throw $th;
             return $this->otherError($ex->getMessage(), $ex->getCode());
@@ -39,9 +41,7 @@ class DrivingLicenseController extends Controller
     {
         try {
             //code...
-            if(!$drivinglicense = DrivingLicense::find($id)) return $this->notFound('Driving License', 404, $id);
-            $response=$this->item($drivinglicense, new DrivingLicenseTransformer());
-            return $this->showResult('Certification with id = '.$id.'is found', $response);
+            return $this->drivinglicenseRepository->show($id);
         } catch (\Exception $ex) {
             //throw $th;
             return $this->otherError($ex->getMessage(), $ex->getCode());
@@ -60,21 +60,9 @@ class DrivingLicenseController extends Controller
         DB::beginTransaction();
         try {
             //code...
-            $validator = Validator::make($request->all(), [
-                'name' => 'required|unique:categories|max:255',
-                'last_updated_by' => 'required|exists:users,id'
-            ]);
-            if ($validator->fails()) {
-                return $this->validationError($validator->errors());
-
-            }
-            $new_drivinglicense = DrivingLicense::create([
-                'name' => $request->input('name'),
-                'last_updated_by' => $request->input('last_updated_by')
-            ]);
-            $response = $this->item($new_drivinglicense, new DrivingLicenseTransformer());
+            $newDrivingLicense = $this->drivinglicenseRepository->store($request->all());
             DB::commit();
-            return $this->showResult('Data is stored', $response, 201);
+            return $newDrivingLicense;
         } catch (\Exception $ex) {
             //throw $th;
             DB::rollback();
@@ -90,21 +78,9 @@ class DrivingLicenseController extends Controller
         DB::beginTransaction();
         try {
             //code...
-            $validator = Validator::make($request->all(), [
-                'name' => 'max:255|unique:categories',
-                'last_updated_by' => 'required|exists:users,id'
-            ]);
-            if ($validator->fails()) {
-                return $this->validationError($validator->errors());
-            }
-            if($drivinglicense = DrivingLicense::find($id)) return $this->notFound('Driving License', 404, $id);
-            $drivinglicense->update([
-                'name' => $request->input('name') ? $request->input('name'):$drivinglicense->name,
-                'last_updated_by' => $request->input('last_updated_by') ? $request->input('last_updated_by'):$drivinglicense->last_updated_by
-            ]);
-            $response = $this->item($drivinglicense, new DrivingLicenseTransformer());
+            $driverLicense = $this->drivinglicenseRepository->update($request->all(), $id);
             DB::commit();
-            return $this->showResult('Driving License with id = '.$id.' is updated successfully', $response);
+            return $driverLicense;
         } catch (\Exception $ex) {
             //throw $th;
             DB::rollback();
@@ -125,10 +101,9 @@ class DrivingLicenseController extends Controller
      {
         try {
             //code...
-            if($deleteLicense=!DrivingLicense::find($id)) return $this->notFound('Certification', 404, $id) ;
-            $deleteLicense->delete();
+            $driverLicense = $this->drivinglicenseRepository->destroy($id);
             DB::commit();
-            return $this->responseJSON('Delete success', ['id'=> $id]);
+            return $driverLicense;
         } catch (\Exception $ex) {
             //throw $th;
             DB::rollback();
