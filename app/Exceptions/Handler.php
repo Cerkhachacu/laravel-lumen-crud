@@ -9,6 +9,8 @@ use Illuminate\Validation\ValidationException;
 use Laravel\Lumen\Exceptions\Handler as ExceptionHandler;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Illuminate\Support\Facades\DB;
+use Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class Handler extends ExceptionHandler
 {
@@ -49,6 +51,22 @@ class Handler extends ExceptionHandler
         // return parent::render($request, $exception);
         $rendered = parent::render($request, $exception);
         DB::rollBack();
+        if($exception instanceof NotFoundHttpException)
+            return response()->json([
+                'error' => [
+                    'code' => $rendered->getStatusCode(),
+                    'success' => false,
+                    'message' => !empty($exception->getMessage()) ? $exception->getMessage() : "Route not found"
+                ]
+            ], $rendered->getStatusCode());
+        if($exception instanceof MethodNotAllowedHttpException)
+            return response()->json([
+                'error' => [
+                    'code' => $rendered->getStatusCode(),
+                    'success' => false,
+                    'message' => !empty($exception->getMessage()) ? $exception->getMessage() : "This method is not allowed for this route"
+                ]
+            ], $rendered->getStatusCode());
         return response()->json([
             'error' => [
                 'code' => $rendered->getStatusCode(),
