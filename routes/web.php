@@ -31,14 +31,6 @@ $router->group(['prefix' => 'crud'], function () use ($router)
 //     ]);
 // }]);
 
-// $router->get('auth', ['middleware'=> 'auth:api', function ()
-// {
-//     return response()->json([
-//         'success'=> true,
-//         'message'=> 'success auth'
-//     ]);
-// }]);
-
 $router->group(['prefix' => 'admin'], function () use ($router) {
 
     $router->post('register', 'AuthController@register');
@@ -77,9 +69,9 @@ $router->group(['prefix' => 'admin'], function () use ($router) {
         $router->put('opportunities/{id}', 'OpportunityController@update');
         $router->delete('opportunities/{id}', 'OpportunityController@destroy');
 
-        $router->post('senioritys', 'SeniorityController@store');
-        $router->put('senioritys/{id}', 'SeniorityController@update');
-        $router->delete('senioritys/{id}', 'SeniorityController@destroy');
+        $router->post('seniorities', 'SeniorityController@store');
+        $router->put('seniorities/{id}', 'SeniorityController@update');
+        $router->delete('seniorities/{id}', 'SeniorityController@destroy');
 
         $router->post('roles', 'RoleController@store');
         $router->put('roles/{id}', 'RoleController@update');
